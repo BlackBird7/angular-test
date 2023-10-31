@@ -11,25 +11,40 @@ import { PokemonsService } from 'src/app/services/pokemons.service';
 export class TableComponent implements AfterViewInit {
   displayedColumns: string[] = ['id', 'name'];
   dataSource: any;
+  totalRecords: number = 0;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-  constructor(private pokemonService: PokemonsService) {
-    this.getPokemonCollection();
-  }
+  constructor(private pokemonService: PokemonsService) {}
 
   ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
-    console.log('paginator', this.paginator);
+    let pageCount = this.paginator.pageIndex * this.paginator.pageSize;
+    this.getPokemonCollection(this.paginator.pageSize, pageCount);
   }
 
-  getPokemonCollection() {
+  getPokemonCollection(rows: number, offset: number): any {
     this.pokemonService
-      .getPokemonsPaginated(20, 0)
+      .getPokemonsPaginated(rows, offset)
       .then((resp: any) => {
-        console.log('resp', resp);
-        this.dataSource = new MatTableDataSource<Pokemon>(resp.results);
+        this.totalRecords = resp.count;
+        let fixedData = resp.results.map((result: any) => {
+          return {
+            id: result.url.split('/')[result.url.split('/').length - 2],
+            name: result.name,
+          };
+        });
+        this.dataSource = new MatTableDataSource<any>(fixedData);
       })
       .catch((error) => {});
+  }
+  onTableChange(event: any) {
+    let pageCount = event.pageIndex * event.pageSize;
+    this.getPokemonCollection(event.pageSize, pageCount);
+  }
+  onRowClick(event: any) {
+    // const { name, value } = event.target;
+    // console.log('name', name);
+    // console.log('value', value);
+    console.log(event.target.innerText)
   }
 }
